@@ -14,7 +14,7 @@ public:
 	static inline Transform transform;
 	static inline float fov = 75.0f;
 	static inline float near = 0.1f;
-	static inline float far = 100.0f;
+	static inline float far = 250.0f;
 
 	static inline Mat4x4 projectionMatrix = Mat4x4::projectionMatrix(fov, ASPECT_RATIO, near, far);
 	static inline Mat4x4 viewMatrix = Mat4x4::identityMatrix();

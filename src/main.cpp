@@ -16,8 +16,9 @@ int main(void)
 
 	Render::initialize();
 	Camera::updateProjectionMatrix();
-	Camera::transform.position = Vec3f(0.0, 0.5, 0);
+	Camera::transform.position = Vec3f(0.0, 0.5f, 0);
 	Camera::transform.rotation = Vec3f(0, 0, 0);
+	Camera::calculateViewMatrix();
 
 
 	//fastObjMesh* mesh = fast_obj_read("res/cube.obj");
@@ -54,6 +55,9 @@ int main(void)
 	Mesh mountains;
 	ResourceManager::loadMesh("res/mountains.obj", mountains);
 	Transform mountainsTransform;
+
+	int frameCount = 0;
+	uint32_t fpsSum = 0;
 
 	while (!Platform::application->shouldExit())
 	{
@@ -118,11 +122,16 @@ int main(void)
 		Render::drawMesh(cube, cubeTransform);
 		Render::drawMesh(car, carTransform);
 		//Render::drawMesh(mountains, mountainsTransform);
+
 		Render::render();
-		std::cout << 1.0f / Time::deltaTime << std::endl;
 		Time::stopUpdateTimer();
+
+		frameCount++;
+		int fps = static_cast<int>(round(1.0f / Time::deltaTime));
+		fpsSum += fps;
 	}
 
+	std::cout << fpsSum / frameCount << std::endl;
 	//fast_obj_destroy(mesh);
 	Platform::screen->finalize();
 	return 0;

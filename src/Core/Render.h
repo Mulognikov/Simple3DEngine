@@ -15,19 +15,21 @@ class Render
 public:
 	static void initialize();
 	static void drawPoint(uint16_t x, uint16_t y, uint8_t color);
-	static void drawLine(Vec2i p0, Vec2i p1, uint8_t color);
 	static void drawLineFast(Vec2i p0, Vec2i p1, uint8_t color);
 	static void drawTriangleWire(Vec2i t0, Vec2i t1, Vec2i t2, uint8_t color);
-	static void drawTriangleHalfSpace(Vec3i t0, Vec3i t1, Vec3i t2, uint8_t color);
+	static void drawTriangleFill(Vec3i t0, Vec3i t1, Vec3i t2, uint8_t color);
 	static void drawMesh(Mesh &mesh, Transform &transform);
 	static void render();
 
 private:
 	Render() = default;
-	static inline uint8_t* frameBuffer = nullptr;
-	static inline Z_BUFFER_DEPTH * zBuffer = nullptr;
+	static inline uint8_t frameBuffer[PIXELS_COUNT];
+	static inline Z_BUFFER_DEPTH zBuffer[PIXELS_COUNT];
+	static inline uint16_t x02[RENDER_H + RENDER_W];
+	static inline uint16_t x012[(RENDER_H + RENDER_W) * 2];
 
 	static void clearScreen();
+	static void interpolate(int i0, float d0, int i1, float d1, uint16_t *values, int* count);
 
 	static inline float edgeFunction(const Vec3f &a, const Vec3f &b, const Vec3f &c)
 	{
