@@ -16,12 +16,25 @@ int main(void)
 
 	Render::initialize();
 	Camera::updateProjectionMatrix();
-	Camera::transform.position = Vec3f(0.0, 0.5f, 0);
+	Camera::transform.position = Vec3f(0.0, 0.5f, -1.0f);
 	Camera::transform.rotation = Vec3f(0, 0, 0);
 	Camera::calculateViewMatrix();
 
 
 	//fastObjMesh* mesh = fast_obj_read("res/cube.obj");
+	Mesh quad;
+	quad.vertices.push_back(Vec3f());
+	quad.vertices.push_back(Vec3f(-1, 1, 0));
+	quad.vertices.push_back(Vec3f(1, 1, 0));
+	quad.vertices.push_back(Vec3f(-1, -1, 0));
+	quad.vertices.push_back(Vec3f(1, -1, 0));
+	quad.faces.push_back(Vec3i(1,2, 4));
+	quad.faces.push_back(Vec3i(1,4, 3));
+
+	Transform quadTransform;
+	quadTransform.position = Vec3f(0, 0, 3);
+	quadTransform.rotation = Vec3f(0, 0, 0);
+
 	Mesh torus;
 	ResourceManager::loadMesh("res/torus.obj", torus);
 
@@ -42,15 +55,23 @@ int main(void)
 	Transform cubeTransform;
 	cubeTransform.position = Vec3f(0.9f, 0, 2.5f);
 	cubeTransform.rotation = Vec3f(30, 0, 0);
-	cubeTransform.scale = Vec3f(0.75f, 0.75f, 0.5f);
+	cubeTransform.scale = Vec3f(1.0f, 1.0f, 1.0f);
 
 	Mesh car;
 	ResourceManager::loadMesh("res/car.obj", car);
 
 	Transform carTransform;
-	carTransform.position = Vec3f(0.0f, -1.5f, -7.0f);
+	carTransform.position = Vec3f(0.0f, -1.5f, -8.0f);
 	carTransform.rotation = Vec3f(0, 45, 0);
 	carTransform.scale = Vec3f(1.0f, 1.0f, 1.0f);
+
+	Mesh head;
+	ResourceManager::loadMesh("res/head.obj", head);
+
+	Transform headTransform;
+	headTransform.position = Vec3f(10.0f, 0.f, -5.0f);
+	headTransform.rotation = Vec3f(0, 0, 0);
+	headTransform.scale = Vec3f(1.0f, 1.0f, 1.0f);
 
 	Mesh mountains;
 	ResourceManager::loadMesh("res/mountains.obj", mountains);
@@ -113,15 +134,17 @@ int main(void)
 
 		torusTransform.rotation = torusTransform.rotation + Vec3f(20.0f, 20.0f, 20.0f) * Time::deltaTime;
 		icosphereTransform.rotation = icosphereTransform.rotation + Vec3f(0, 50.0f, 0) * Time::deltaTime;
-		cubeTransform.rotation = cubeTransform.rotation + Vec3f(10.0f, 90.0f, 20.0f) * Time::deltaTime;
+		//cubeTransform.rotation = cubeTransform.rotation + Vec3f(10.0f, 90.0f, 20.0f) * Time::deltaTime;
 
 		Camera::calculateViewMatrix();
 
+		Render::drawMesh(quad, quadTransform);
 		Render::drawMesh(torus, torusTransform);
 		Render::drawMesh(icosphere, icosphereTransform);
 		Render::drawMesh(cube, cubeTransform);
 		Render::drawMesh(car, carTransform);
-		//Render::drawMesh(mountains, mountainsTransform);
+		Render::drawMesh(head, headTransform);
+		Render::drawMesh(mountains, mountainsTransform);
 
 		Render::render();
 		Time::stopUpdateTimer();

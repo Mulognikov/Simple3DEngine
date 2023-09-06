@@ -40,6 +40,21 @@ struct Vec3f
 		return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 	}
 
+	static float dotProduct(Vec4f &v1, Vec3f &v2)
+	{
+		return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+	}
+
+	static float dotProduct(Vec3f &v1, Vec4f &v2)
+	{
+		return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+	}
+
+	static float dotProduct(Vec4f &v1, Vec4f &v2)
+	{
+		return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+	}
+
 	static Vec3f crossProduct(Vec3f &v1, Vec3f &v2)
 	{
 		Vec3f v;
@@ -68,7 +83,7 @@ Vec4f::operator Vec3f() const
 
 Vec3f::operator Vec4f() const
 {
-	return {x, y, z, 0};
+	return {x, y, z, 1};
 }
 
 

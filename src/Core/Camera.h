@@ -12,16 +12,29 @@ private:
 
 public:
 	static inline Transform transform;
-	static inline float fov = 75.0f;
+	static inline float fov = 90.0f;
 	static inline float near = 0.1f;
-	static inline float far = 250.0f;
+	static inline float far = 100.0f;
 
+	static inline Vec3f clipPlaneNormals[5];
+	static inline float clipPlaneD[5] { 0 };
 	static inline Mat4x4 projectionMatrix = Mat4x4::projectionMatrix(fov, ASPECT_RATIO, near, far);
 	static inline Mat4x4 viewMatrix = Mat4x4::identityMatrix();
 
 	static inline void updateProjectionMatrix()
 	{
 		projectionMatrix = Mat4x4::projectionMatrix(fov, ASPECT_RATIO, near, far);
+
+		float cos = std::cosf(fov * 0.5f * 3.14159f / 180);
+		float sin = std::sinf(fov * 0.5f * 3.14159f / 180);
+
+		clipPlaneNormals[0] = Vec3f(0, 0, 1);
+		clipPlaneNormals[1] = Vec3f(cos * ASPECT_RATIO, 0, sin);
+		clipPlaneNormals[2] = Vec3f(-cos * ASPECT_RATIO, 0, sin);
+		clipPlaneNormals[3] = Vec3f(0, cos, sin);
+		clipPlaneNormals[4] = Vec3f(0, -cos, sin);
+
+		clipPlaneD[0] = near;
 	}
 
 	static inline void calculateViewMatrix()

@@ -40,6 +40,7 @@ bool ResourceManager::loadMesh(const std::string& filePath, Mesh &mesh)
 		}
 	}
 
+	mesh.calculateBounds();
 	stream.close();
 	return true;
 }
