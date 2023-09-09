@@ -33,7 +33,10 @@ add_executable(${PROJECT_NAME}
         src/Platform/Abstract/Application.h
         src/Platform/Windows/ApplicationWindows.h
         src/Platform/Platform.cpp
-        src/Platform/Abstract/Input.h src/Platform/Windows/InputGLFW.h src/Platform/Windows/InputGLFW.cpp)
+        src/Platform/Abstract/Input.h src/Platform/Windows/InputGLFW.h
+        src/Platform/Windows/InputGLFW.cpp
+        src/Core/Triangle.h
+        src/Core/ScreenTriangle.h)
 
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)

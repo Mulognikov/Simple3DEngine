@@ -21,15 +21,23 @@ int main(void)
 	Camera::calculateViewMatrix();
 
 
+	Mesh cube;
+	ResourceManager::loadMesh("res/cube.obj", cube);
+
+	Transform cubeTransform;
+	cubeTransform.position = Vec3f(0.9f, 0, 2.5f);
+	cubeTransform.rotation = Vec3f(30, 0, 0);
+	cubeTransform.scale = Vec3f(1.0f, 1.0f, 1.0f);
+
 	//fastObjMesh* mesh = fast_obj_read("res/cube.obj");
-	Mesh quad;
-	quad.vertices.push_back(Vec3f());
-	quad.vertices.push_back(Vec3f(-1, 1, 0));
-	quad.vertices.push_back(Vec3f(1, 1, 0));
-	quad.vertices.push_back(Vec3f(-1, -1, 0));
-	quad.vertices.push_back(Vec3f(1, -1, 0));
-	quad.faces.push_back(Vec3i(1,2, 4));
-	quad.faces.push_back(Vec3i(1,4, 3));
+//	Mesh quad;
+//	quad.vertices.push_back(Vec3f());
+//	quad.vertices.push_back(Vec3f(-1, 1, 0));
+//	quad.vertices.push_back(Vec3f(1, 1, 0));
+//	quad.vertices.push_back(Vec3f(-1, -1, 0));
+//	quad.vertices.push_back(Vec3f(1, -1, 0));
+//	quad.faces.push_back(Vec3i(1,2, 4));
+//	quad.faces.push_back(Vec3i(1,4, 3));
 
 	Transform quadTransform;
 	quadTransform.position = Vec3f(0, 0, 3);
@@ -48,14 +56,6 @@ int main(void)
 	Transform icosphereTransform;
 	icosphereTransform.position = Vec3f(-0.6f, -0.3f, 3.0f);
 	icosphereTransform.scale = Vec3f(1.0f, 1.0f, 1.0f);
-
-	Mesh cube;
-	ResourceManager::loadMesh("res/cube.obj", cube);
-
-	Transform cubeTransform;
-	cubeTransform.position = Vec3f(0.9f, 0, 2.5f);
-	cubeTransform.rotation = Vec3f(30, 0, 0);
-	cubeTransform.scale = Vec3f(1.0f, 1.0f, 1.0f);
 
 	Mesh car;
 	ResourceManager::loadMesh("res/car.obj", car);
@@ -132,13 +132,13 @@ int main(void)
 			Camera::transform.rotation = Camera::transform.rotation + Vec3f(0, 1, 0) * cameraRotationSpeed * Time::deltaTime;
 
 
-		torusTransform.rotation = torusTransform.rotation + Vec3f(20.0f, 20.0f, 20.0f) * Time::deltaTime;
-		icosphereTransform.rotation = icosphereTransform.rotation + Vec3f(0, 50.0f, 0) * Time::deltaTime;
+		//torusTransform.rotation = torusTransform.rotation + Vec3f(20.0f, 20.0f, 20.0f) * Time::deltaTime;
+		//icosphereTransform.rotation = icosphereTransform.rotation + Vec3f(0, 50.0f, 0) * Time::deltaTime;
 		//cubeTransform.rotation = cubeTransform.rotation + Vec3f(10.0f, 90.0f, 20.0f) * Time::deltaTime;
 
 		Camera::calculateViewMatrix();
 
-		Render::drawMesh(quad, quadTransform);
+		//Render::drawMesh(quad, quadTransform);
 		Render::drawMesh(torus, torusTransform);
 		Render::drawMesh(icosphere, icosphereTransform);
 		Render::drawMesh(cube, cubeTransform);

@@ -20,7 +20,7 @@ void Render::drawPoint(uint16_t x, uint16_t y, uint8_t color)
 	frameBuffer[y * RENDER_W + x] = color;
 }
 
-void Render::drawLineFast(Vec2i p0, Vec2i p1, uint8_t color)
+void Render::drawLineFast(ScreenTriangle p0, ScreenTriangle p1, uint8_t color)
 {
 	bool yLonger = false;
 	int incrementVal, endVal;
@@ -67,14 +67,14 @@ void Render::drawLineFast(Vec2i p0, Vec2i p1, uint8_t color)
 	}
 }
 
-void Render::drawTriangleWire(Vec2i t0, Vec2i t1, Vec2i t2, uint8_t color)
+void Render::drawTriangleWire(ScreenTriangle t0, ScreenTriangle t1, ScreenTriangle t2, uint8_t color)
 {
 	drawLineFast(t0, t1, color);
 	drawLineFast(t1, t2, color);
 	drawLineFast(t0, t2, color);
 }
 
-void Render::drawTriangleFill(Vec3i t0, Vec3i t1, Vec3i t2, uint8_t color)
+void Render::drawTriangleFill(ScreenTriangle t0, ScreenTriangle t1, ScreenTriangle t2, uint8_t color)
 {
 	if (t1.y < t0.y) std::swap(t1, t0);
 	if (t2.y < t0.y) std::swap(t2, t0);
@@ -86,41 +86,69 @@ void Render::drawTriangleFill(Vec3i t0, Vec3i t1, Vec3i t2, uint8_t color)
 	interpolate(t1.y, t1.x, t2.y, t2.x, x012 + count - 1, count);
 	interpolate(t0.y, t0.x, t2.y, t2.x, x02, count);
 
-	uint16_t* x_left;
-	uint16_t* x_right;
+	interpolate(t0.y, 1.0f/t0.z, t1.y, 1.0f/t1.z, z012, count);
+	interpolate(t1.y, 1.0f/t1.z, t2.y, 1.0f/t2.z, z012 + count - 1, count);
+	interpolate(t0.y, 1.0f/t0.z, t2.y, 1.0f/t2.z, z02, count);
+
+	float* x_left;
+	float* x_right;
+
+	Z_BUFFER_DEPTH* z_left;
+	Z_BUFFER_DEPTH* z_right;
 
 	int m = count / 2;
+	uint8_t c;
 
 	if (x02[m] < x012[m])
 	{
-		x_left = x02;
+		x_left  = x02;
 		x_right = x012;
+		z_left  = z02;
+		z_right = z012;
 	}
 	else
 	{
-		x_left = x012;
+		x_left  = x012;
 		x_right = x02;
+		z_left  = z012;
+		z_right = z02;
 	}
 
-	Vec3f s1 = t1 - t0;
-	Vec3f s2 = t2 - t1;
-	Vec3f s = Vec3f::crossProduct(s1, s2);
-	float d = -(s.x * t0.x + s.y * t0.y + s.z * t0.z);
+//	Vec3f t10(t0.x, t0.y, t0.z);
+//	Vec3f t11(t1.x, t1.y, t1.z);
+//	Vec3f t12(t2.x, t2.y, t2.z);
+//
+//	Vec3f s1 = t11 - t10;
+//	Vec3f s2 = t12 - t11;
+//	Vec3f s = Vec3f::crossProduct(s1, s2);
+//	float d = -(s.x * t0.x + s.y * t0.y + s.z * t0.z);
 
-	for (int y = t0.y; y < t2.y; y++)
+	for (int y = t0.y; y <= t2.y; y++)
 	{
-		int start = x_left[y - t0.y];
-		int end = x_right[y - t0.y];
+		int start = std::floor(x_left[y - t0.y]);
+		int end = std::ceil(x_right[y - t0.y]);
+		Z_BUFFER_DEPTH startZ = z_left[y - t0.y];
+		Z_BUFFER_DEPTH endZ = z_right[y - t0.y];
+
+		int countZ;
+
+		interpolate(start, startZ, end, endZ, zValues, countZ);
 
 		for (int x = start; x < end; x++)
 		{
-			int z = std::round(-(s.x * x + s.y * y + d) / s.z);
+			//float z = -(s.x * x + s.y * y + d) / s.z;
+			Z_BUFFER_DEPTH z = zValues[x - start];
 
-			if (zBuffer[y * RENDER_W + x] > z)
+			if (zBuffer[y * RENDER_W + x] < z)
 			{
 				zBuffer[y * RENDER_W + x] = z;
-
 				drawPoint(x, y, color);
+
+				if (Platform::input->keyPressed(90))
+				{
+					int zColor = z * 600;
+					drawPoint(x, y, zColor);
+				}
 			}
 		}
 
@@ -128,7 +156,7 @@ void Render::drawTriangleFill(Vec3i t0, Vec3i t1, Vec3i t2, uint8_t color)
 	}
 }
 
-void Render::verticesWorldToView(Vec3f *inVertices, int &verticesCount, Transform &transform, Vec4f *outVertices)
+void Render::verticesWorldToView(Vec3f *inVertices, uint32_t &verticesCount, Transform &transform, Vec4f *outVertices)
 {
 	Mat4x4 translate = Mat4x4::translation(transform.position);
 	Mat4x4 matRotX = Mat4x4::rotationMatrix_X(transform.rotation.x * 3.14159f / 180);
@@ -145,7 +173,7 @@ void Render::verticesWorldToView(Vec3f *inVertices, int &verticesCount, Transfor
 	}
 }
 
-void Render::verticesViewToScreen(Vec4f *inVertices, int &verticesCount, Vec3i *outVertices)
+void Render::verticesViewToScreen(Vec4f *inVertices, uint32_t &verticesCount, ScreenTriangle *outVertices)
 {
 	for (int i = 1; i < verticesCount; i++)
 	{
@@ -154,13 +182,14 @@ void Render::verticesViewToScreen(Vec4f *inVertices, int &verticesCount, Vec3i *
 		projected.x /= projected.w;
 		projected.y /= projected.w;
 
-		outVertices[i].x = std::round((projected.x + 1.0f) * RENDER_W * 0.5f);
-		outVertices[i].y = std::round((projected.y + 1.0f) * RENDER_H * 0.5f);
-		outVertices[i].z = std::round(((projected.z - Camera::near) / (Camera::far - Camera::near)) * std::numeric_limits<Z_BUFFER_DEPTH>::max());
+		outVertices[i].x = (projected.x + 1.0f) * (RENDER_W / 2);
+		outVertices[i].y = (projected.y + 1.0f) * (RENDER_H / 2);
+		//outVertices[i].z = std::round(((projected.z - Camera::near) / (Camera::far - Camera::near)) * std::numeric_limits<Z_BUFFER_DEPTH>::max());
+		outVertices[i].z = inVertices[i].z;
 	}
 }
 
-void Render::cullBackFaces(Vec4f *inVertices, Vec3i *inFaces, int &facesCount, Vec3i *outFaces, int &outCount)
+void Render::cullBackFaces(Vec4f *inVertices, Triangle *inTriangles, uint32_t &trianglesCount, Triangle *outTriangles, uint32_t &outCount)
 {
 	outCount = 0;
 
@@ -169,14 +198,14 @@ void Render::cullBackFaces(Vec4f *inVertices, Vec3i *inFaces, int &facesCount, V
 //	Vec3i *f[] = {bad, bad, outFaces};
 //	int *c[] = {&badC, &badC, &outCount};
 
-	for (int i = 0; i < facesCount; i++)
+	for (int i = 0; i < trianglesCount; i++)
 	{
-		Vec3f v1 = inVertices[inFaces[i].y] - inVertices[inFaces[i].x];
-		Vec3f v2 = inVertices[inFaces[i].z] - inVertices[inFaces[i].x];
+		Vec3f v1 = inVertices[inTriangles[i].face[1]] - inVertices[inTriangles[i].face[0]];
+		Vec3f v2 = inVertices[inTriangles[i].face[2]] - inVertices[inTriangles[i].face[0]];
 		Vec3f n = Vec3f::crossProduct(v1, v2);
 		n = Vec3f::normalize(n);
 
-		Vec3f cameraDir = Vec3f(0, 0, 0) - inVertices[inFaces[i].x];
+		Vec3f cameraDir = Vec3f(0, 0, 0) - inVertices[inTriangles[i].face[0]];
 		cameraDir = Vec3f::normalize(cameraDir);
 		float dot = Vec3f::dotProduct(cameraDir, n);
 
@@ -186,29 +215,38 @@ void Render::cullBackFaces(Vec4f *inVertices, Vec3i *inFaces, int &facesCount, V
 //		*c[0] = 0;
 //		*c[1] = 0;
 
+		if (Platform::input->keyPressed(342))
+		{
+			outTriangles[outCount] = inTriangles[i];
+			outCount++;
+			continue;
+		}
+
 		if (dot > 0)
 		{
-			outFaces[outCount] = inFaces[i];
+			outTriangles[outCount] = inTriangles[i];
 			outCount++;
 		}
+
+
 	}
 }
 
-void Render::clipFaces(Vec4f *inVertices, Vec3i *inFaces, int &verticesCount, int &facesCount, Vec3i *outFaces, int &outFacesCount)
+void Render::clipFaces(Vec4f *inVertices, Triangle *inTriangles, uint32_t &verticesCount, uint32_t &trianglesCount, Triangle *outTriangles, uint32_t &outTrianglesCount)
 {
-	outFacesCount = 0;
+	outTrianglesCount = 0;
 	uint8_t clipCase = 0;
 
-	for (int i = 0; i < facesCount; i++)
+	for (int i = 0; i < trianglesCount; i++)
 	{
-		Vec3i needCheckFaces[100];
+		Triangle needCheckFaces[100];
 		uint8_t needCheckFacesCount = 0;
 
-		Vec3i newFaces[100];
-		newFaces[0] = inFaces[i];
+		Triangle newFaces[100];
+		newFaces[0] = inTriangles[i];
 		uint8_t newFacesCount = 1;
 
-		for (int j = 0; j < 5; j++)
+		for (int j = 0; j < 6; j++)
 		{
 			std::copy(newFaces, &newFaces[newFacesCount], needCheckFaces);
 			needCheckFacesCount = newFacesCount;
@@ -216,9 +254,9 @@ void Render::clipFaces(Vec4f *inVertices, Vec3i *inFaces, int &verticesCount, in
 
 			for (int k = 0; k < needCheckFacesCount; k++)
 			{
-				uint8_t d0 = !std::signbit(Vec3f::dotProduct(Camera::clipPlaneNormals[j], inVertices[needCheckFaces[k].x]) - Camera::clipPlaneD[j]);
-				uint8_t d1 = !std::signbit(Vec3f::dotProduct(Camera::clipPlaneNormals[j], inVertices[needCheckFaces[k].y]) - Camera::clipPlaneD[j]);
-				uint8_t d2 = !std::signbit(Vec3f::dotProduct(Camera::clipPlaneNormals[j], inVertices[needCheckFaces[k].z]) - Camera::clipPlaneD[j]);
+				uint8_t d0 = !std::signbit(Vec3f::dotProduct(Camera::clipPlaneNormals[j], inVertices[needCheckFaces[k].face[0]]) - Camera::clipPlaneD[j]);
+				uint8_t d1 = !std::signbit(Vec3f::dotProduct(Camera::clipPlaneNormals[j], inVertices[needCheckFaces[k].face[1]]) - Camera::clipPlaneD[j]);
+				uint8_t d2 = !std::signbit(Vec3f::dotProduct(Camera::clipPlaneNormals[j], inVertices[needCheckFaces[k].face[2]]) - Camera::clipPlaneD[j]);
 
 				clipCase = d0;
 				clipCase = clipCase << 1;
@@ -238,153 +276,153 @@ void Render::clipFaces(Vec4f *inVertices, Vec3i *inFaces, int &verticesCount, in
 
 					case 1:
 					{
-						Vec3f a = inVertices[needCheckFaces[k].z];
-						Vec3f b = inVertices[needCheckFaces[k].x];
-						Vec3f c = inVertices[needCheckFaces[k].y];
+						Vec3f a = inVertices[needCheckFaces[k].face[2]];
+						Vec3f b = inVertices[needCheckFaces[k].face[0]];
+						Vec3f c = inVertices[needCheckFaces[k].face[1]];
 
 						Vec3f intersectAB, intersectAC;
 						intersectionWithPlane(a, b, Camera::clipPlaneNormals[j], Camera::clipPlaneD[j], intersectAB);
 						intersectionWithPlane(a, c, Camera::clipPlaneNormals[j], Camera::clipPlaneD[j], intersectAC);
 
 						inVertices[verticesCount] = intersectAB;
-						newFaces[newFacesCount].x = verticesCount;
+						newFaces[newFacesCount].face[0] = verticesCount;
 						verticesCount++;
 
 						inVertices[verticesCount] = intersectAC;
-						newFaces[newFacesCount].y = verticesCount;
+						newFaces[newFacesCount].face[1] = verticesCount;
 						verticesCount++;
 
-						newFaces[newFacesCount].z = needCheckFaces[k].z;
+						newFaces[newFacesCount].face[2] = needCheckFaces[k].face[2];
 						newFacesCount++;
 						break;
 					}
 
 					case 2:
 					{
-						Vec3f a = inVertices[needCheckFaces[k].y];
-						Vec3f b = inVertices[needCheckFaces[k].x];
-						Vec3f c = inVertices[needCheckFaces[k].z];
+						Vec3f a = inVertices[needCheckFaces[k].face[1]];
+						Vec3f b = inVertices[needCheckFaces[k].face[0]];
+						Vec3f c = inVertices[needCheckFaces[k].face[2]];
 
 						Vec3f intersectAB, intersectAC;
 						intersectionWithPlane(a, b, Camera::clipPlaneNormals[j], Camera::clipPlaneD[j], intersectAB);
 						intersectionWithPlane(a, c, Camera::clipPlaneNormals[j], Camera::clipPlaneD[j], intersectAC);
 
 						inVertices[verticesCount] = intersectAB;
-						newFaces[newFacesCount].x = verticesCount;
+						newFaces[newFacesCount].face[0] = verticesCount;
 						verticesCount++;
 
 						inVertices[verticesCount] = intersectAC;
-						newFaces[newFacesCount].z = verticesCount;
+						newFaces[newFacesCount].face[2] = verticesCount;
 						verticesCount++;
 
-						newFaces[newFacesCount].y = needCheckFaces[k].y;
+						newFaces[newFacesCount].face[1] = needCheckFaces[k].face[1];
 						newFacesCount++;
 						break;
 					}
 					case 4:
 					{
-						Vec3f a = inVertices[needCheckFaces[k].x];
-						Vec3f b = inVertices[needCheckFaces[k].y];
-						Vec3f c = inVertices[needCheckFaces[k].z];
+						Vec3f a = inVertices[needCheckFaces[k].face[0]];
+						Vec3f b = inVertices[needCheckFaces[k].face[1]];
+						Vec3f c = inVertices[needCheckFaces[k].face[2]];
 
 						Vec3f intersectAB, intersectAC;
 						intersectionWithPlane(a, b, Camera::clipPlaneNormals[j], Camera::clipPlaneD[j], intersectAB);
 						intersectionWithPlane(a, c, Camera::clipPlaneNormals[j], Camera::clipPlaneD[j], intersectAC);
 
 						inVertices[verticesCount] = intersectAB;
-						newFaces[newFacesCount].y = verticesCount;
+						newFaces[newFacesCount].face[1] = verticesCount;
 						verticesCount++;
 
 						inVertices[verticesCount] = intersectAC;
-						newFaces[newFacesCount].z = verticesCount;
+						newFaces[newFacesCount].face[2] = verticesCount;
 						verticesCount++;
 
-						newFaces[newFacesCount].x = needCheckFaces[k].x;
+						newFaces[newFacesCount].face[0] = needCheckFaces[k].face[0];
 						newFacesCount++;
 						break;
 					}
 					case 3:
 					{
-						Vec3f a = inVertices[needCheckFaces[k].y];
-						Vec3f b = inVertices[needCheckFaces[k].z];
-						Vec3f c = inVertices[needCheckFaces[k].x];
+						Vec3f a = inVertices[needCheckFaces[k].face[1]];
+						Vec3f b = inVertices[needCheckFaces[k].face[2]];
+						Vec3f c = inVertices[needCheckFaces[k].face[0]];
 
 						Vec3f intersectAC, intersectBC;
 						intersectionWithPlane(a, c, Camera::clipPlaneNormals[j], Camera::clipPlaneD[j], intersectAC);
 						intersectionWithPlane(b, c, Camera::clipPlaneNormals[j], Camera::clipPlaneD[j], intersectBC);
 
-						newFaces[newFacesCount].y = needCheckFaces[k].y;
-						newFaces[newFacesCount].z = needCheckFaces[k].z;
+						newFaces[newFacesCount].face[1] = needCheckFaces[k].face[1];
+						newFaces[newFacesCount].face[2] = needCheckFaces[k].face[2];
 						inVertices[verticesCount] = intersectAC;
-						newFaces[newFacesCount].x = verticesCount;
+						newFaces[newFacesCount].face[0] = verticesCount;
 
 						newFacesCount++;
 
-						newFaces[newFacesCount].y = verticesCount;
+						newFaces[newFacesCount].face[1] = verticesCount;
 						verticesCount++;
 
 						inVertices[verticesCount] = intersectBC;
-						newFaces[newFacesCount].x = verticesCount;
+						newFaces[newFacesCount].face[0] = verticesCount;
 						verticesCount++;
 
-						newFaces[newFacesCount].z = needCheckFaces[k].z;
+						newFaces[newFacesCount].face[2] = needCheckFaces[k].face[2];
 						newFacesCount++;
 						break;
 					}
 					case 5:
 					{
-						Vec3f a = inVertices[needCheckFaces[k].x];
-						Vec3f b = inVertices[needCheckFaces[k].z];
-						Vec3f c = inVertices[needCheckFaces[k].y];
+						Vec3f a = inVertices[needCheckFaces[k].face[0]];
+						Vec3f b = inVertices[needCheckFaces[k].face[2]];
+						Vec3f c = inVertices[needCheckFaces[k].face[1]];
 
 						Vec3f intersectAC, intersectBC;
 						intersectionWithPlane(a, c, Camera::clipPlaneNormals[j], Camera::clipPlaneD[j], intersectAC);
 						intersectionWithPlane(b, c, Camera::clipPlaneNormals[j], Camera::clipPlaneD[j], intersectBC);
 
-						newFaces[newFacesCount].x = needCheckFaces[k].x;
-						newFaces[newFacesCount].z = needCheckFaces[k].z;
+						newFaces[newFacesCount].face[0] = needCheckFaces[k].face[0];
+						newFaces[newFacesCount].face[2] = needCheckFaces[k].face[2];
 						inVertices[verticesCount] = intersectAC;
-						newFaces[newFacesCount].y = verticesCount;
+						newFaces[newFacesCount].face[1] = verticesCount;
 
 						newFacesCount++;
 
-						newFaces[newFacesCount].x = verticesCount;
+						newFaces[newFacesCount].face[0] = verticesCount;
 						verticesCount++;
 
 						inVertices[verticesCount] = intersectBC;
-						newFaces[newFacesCount].y = verticesCount;
+						newFaces[newFacesCount].face[1] = verticesCount;
 						verticesCount++;
 
-						newFaces[newFacesCount].z = needCheckFaces[k].z;
+						newFaces[newFacesCount].face[2] = needCheckFaces[k].face[2];
 						newFacesCount++;
 						break;
 					}
 
 					case 6:
 					{
-						Vec3f a = inVertices[needCheckFaces[k].x];
-						Vec3f b = inVertices[needCheckFaces[k].y];
-						Vec3f c = inVertices[needCheckFaces[k].z];
+						Vec3f a = inVertices[needCheckFaces[k].face[0]];
+						Vec3f b = inVertices[needCheckFaces[k].face[1]];
+						Vec3f c = inVertices[needCheckFaces[k].face[2]];
 
 						Vec3f intersectAC, intersectBC;
 						intersectionWithPlane(a, c, Camera::clipPlaneNormals[j], Camera::clipPlaneD[j], intersectAC);
 						intersectionWithPlane(b, c, Camera::clipPlaneNormals[j], Camera::clipPlaneD[j], intersectBC);
 
-						newFaces[newFacesCount].x = needCheckFaces[k].x;
-						newFaces[newFacesCount].y = needCheckFaces[k].y;
+						newFaces[newFacesCount].face[0] = needCheckFaces[k].face[0];
+						newFaces[newFacesCount].face[1] = needCheckFaces[k].face[1];
 						inVertices[verticesCount] = intersectAC;
-						newFaces[newFacesCount].z = verticesCount;
+						newFaces[newFacesCount].face[2] = verticesCount;
 
 						newFacesCount++;
 
-						newFaces[newFacesCount].x = verticesCount;
+						newFaces[newFacesCount].face[0] = verticesCount;
 						verticesCount++;
 
 						inVertices[verticesCount] = intersectBC;
-						newFaces[newFacesCount].z = verticesCount;
+						newFaces[newFacesCount].face[2] = verticesCount;
 						verticesCount++;
 
-						newFaces[newFacesCount].y = needCheckFaces[k].y;
+						newFaces[newFacesCount].face[1] = needCheckFaces[k].face[1];
 						newFacesCount++;
 						break;
 					}
@@ -395,43 +433,43 @@ void Render::clipFaces(Vec4f *inVertices, Vec3i *inFaces, int &verticesCount, in
 
 		if (newFacesCount > 0)
 		{
-			std::copy(&newFaces[0], &newFaces[newFacesCount], &outFaces[outFacesCount]);
-			outFacesCount += newFacesCount;
+			std::copy(&newFaces[0], &newFaces[0] + newFacesCount, &outTriangles[outTrianglesCount]);
+			outTrianglesCount += newFacesCount;
 		}
 	}
 }
 
 void Render::drawMesh(Mesh &mesh, Transform &transform)
 {
-	int verticesCount = mesh.vertices.size();
-	int facesCount = mesh.faces.size();
+	uint32_t verticesCount = mesh.verticesCount;
+	uint32_t facesCount = mesh.trianglesCount;
 
 	Vec4f viewVertices[10000];
-	Vec3i cullFaces[10000];
-	Vec3i screenPositions[10000];
+	Triangle cullFaces[10000];
+	ScreenTriangle screenPositions[10000];
 
-	Vec3i newFaces[10000];
-	int newFacesCount = 0;
+	Triangle newTriangles[10000];
+	uint32_t newTrianglesCount = 0;
 
-	int cullFacesCount = 0;
+	uint32_t cullFacesCount = 0;
 
 	verticesWorldToView(&mesh.vertices[0], verticesCount, transform, viewVertices);
-	cullBackFaces(viewVertices, &mesh.faces[0], facesCount, cullFaces, cullFacesCount);
-	clipFaces(viewVertices, cullFaces, verticesCount, cullFacesCount, newFaces, newFacesCount);
+	cullBackFaces(viewVertices, mesh.triangles, facesCount, cullFaces, cullFacesCount);
+	clipFaces(viewVertices, cullFaces, verticesCount, cullFacesCount, newTriangles, newTrianglesCount);
 	verticesViewToScreen(viewVertices, verticesCount, screenPositions);
 
-	for(int i = 0; i < newFacesCount; i++)
+	for(int i = 0; i < newTrianglesCount; i++)
 	{
 		Vec3f triangleView[3];
-		Vec3i triangle[3];
+		ScreenTriangle triangle[3];
 
-		triangleView[0] = viewVertices[newFaces[i].x];
-		triangleView[1] = viewVertices[newFaces[i].y];
-		triangleView[2] = viewVertices[newFaces[i].z];
+		triangleView[0] = viewVertices[newTriangles[i].face[0]];
+		triangleView[1] = viewVertices[newTriangles[i].face[1]];
+		triangleView[2] = viewVertices[newTriangles[i].face[2]];
 
-		triangle[0] = screenPositions[newFaces[i].x];
-		triangle[1] = screenPositions[newFaces[i].y];
-		triangle[2] = screenPositions[newFaces[i].z];
+		triangle[0] = screenPositions[newTriangles[i].face[0]];
+		triangle[1] = screenPositions[newTriangles[i].face[1]];
+		triangle[2] = screenPositions[newTriangles[i].face[2]];
 
 		Vec3f v1 = (triangleView[1] - triangleView[0]);
 		Vec3f v2 = (triangleView[2] - triangleView[0]);
@@ -451,7 +489,11 @@ void Render::drawMesh(Mesh &mesh, Transform &transform)
 		}
 
 		drawTriangleFill(triangle[0], triangle[1], triangle[2], color);
-		//drawTriangleWire(triangle[0], triangle[1], triangle[2], 0b11100000);
+
+		if (Platform::input->keyPressed(88))
+		{
+			drawTriangleWire(triangle[0], triangle[1], triangle[2], 0b11100000);
+		}
 	}
 }
 
@@ -464,10 +506,10 @@ void Render::render()
 void Render::clearScreen()
 {
 	std::memset(frameBuffer, 0b00010111, sizeof(frameBuffer[0]) * PIXELS_COUNT);
-	std::memset(zBuffer, std::numeric_limits<Z_BUFFER_DEPTH>::max(), sizeof(zBuffer[0]) * PIXELS_COUNT);
+	std::memset(zBuffer, 0, sizeof(zBuffer[0]) * PIXELS_COUNT);
 }
 
-void Render::interpolate(int i0, float d0, int i1, float d1, uint16_t *values, int& count)
+void Render::interpolate(int i0, float d0, int i1, float d1, float *values, int& count)
 {
 	if (i0 == i1)
 	{
@@ -476,10 +518,12 @@ void Render::interpolate(int i0, float d0, int i1, float d1, uint16_t *values, i
 		return;
 	}
 
-	float a = (d1 - d0) / (i1 - i0);
+	float a = (d1 - d0) / static_cast<float>(i1 - i0);
 	float d = d0;
 
 	int index = 0;
+
+
 	for (int i = i0; i <= i1; i++)
 	{
 		values[index] = d;

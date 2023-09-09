@@ -1,5 +1,6 @@
 #include <iostream>
 #include "ScreenOpenGL.h"
+#include "../Platform.h"
 
 int32_t ScreenOpenGL::initialize()
 {
@@ -150,11 +151,14 @@ void ScreenOpenGL::sendToScreen(uint8_t *frameBuffer)
 
 		int position = i * 3;
 
-//		frameBufferRGB24[position] = frameBuffer[i];
-//		frameBufferRGB24[position + 1] = frameBuffer[i];
-//		frameBufferRGB24[position + 2] = frameBuffer[i];
-//
-//		continue;
+		if (Platform::input->keyPressed(90))
+		{
+			frameBufferRGB24[position] = frameBuffer[i];
+			frameBufferRGB24[position + 1] = frameBuffer[i];
+			frameBufferRGB24[position + 2] = frameBuffer[i];
+
+			continue;
+		}
 		frameBufferRGB24[position] = r * 36;
 		frameBufferRGB24[position + 1] = g * 36;
 		frameBufferRGB24[position + 2] = b * 85;
