@@ -5,6 +5,9 @@ project(${PROJECT_NAME})
 
 set(CMAKE_CXX_STANDARD 23)
 
+string(REPLACE "-O2" "-O0" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+string(REPLACE "-O2" "-O0" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
+
 add_executable(${PROJECT_NAME}
         src/main.cpp
         src/Core/Render.cpp

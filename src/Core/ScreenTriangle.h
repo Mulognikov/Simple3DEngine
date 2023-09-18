@@ -3,7 +3,7 @@
 
 struct ScreenTriangle
 {
-	uint16_t x;
-	uint16_t y;
+	int16_t x;
+	float y;
 	float z;
 };

@@ -4,8 +4,6 @@
 #include "Core/Camera.h"
 #include "Core/Time.h"
 
-//#include "fast_obj.h"
-
 int main(void)
 {
 	Platform::initialize();
@@ -16,8 +14,8 @@ int main(void)
 
 	Render::initialize();
 	Camera::updateProjectionMatrix();
-	Camera::transform.position = Vec3f(0.0, 0.5f, -1.0f);
-	Camera::transform.rotation = Vec3f(0, 0, 0);
+	Camera::transform.position = Vec3f(0.0, 0.0f, 0.0f);
+	Camera::transform.rotation = Vec3f(0.0, 0, 0);
 	Camera::calculateViewMatrix();
 
 
@@ -25,23 +23,26 @@ int main(void)
 	ResourceManager::loadMesh("res/cube.obj", cube);
 
 	Transform cubeTransform;
-	cubeTransform.position = Vec3f(0.9f, 0, 2.5f);
-	cubeTransform.rotation = Vec3f(30, 0, 0);
+	cubeTransform.position = Vec3f(0.0f, -1.72f, 1.5f);
+	cubeTransform.rotation = Vec3f(20, 0, 0);
 	cubeTransform.scale = Vec3f(1.0f, 1.0f, 1.0f);
 
-	//fastObjMesh* mesh = fast_obj_read("res/cube.obj");
-//	Mesh quad;
-//	quad.vertices.push_back(Vec3f());
-//	quad.vertices.push_back(Vec3f(-1, 1, 0));
-//	quad.vertices.push_back(Vec3f(1, 1, 0));
-//	quad.vertices.push_back(Vec3f(-1, -1, 0));
-//	quad.vertices.push_back(Vec3f(1, -1, 0));
-//	quad.faces.push_back(Vec3i(1,2, 4));
-//	quad.faces.push_back(Vec3i(1,4, 3));
+	Mesh tri;
+	tri.vertices = new Vec3f[4];
+	tri.vertices[1] = Vec3f(-1,1,0);
+	tri.vertices[2] = Vec3f(1,1,0);
+	tri.vertices[3] = Vec3f(1,-1,0);
+	tri.triangles = new Triangle[1];
+	tri.triangles[0].face[0] = 1;
+	tri.triangles[0].face[1] = 2;
+	tri.triangles[0].face[2] = 3;
+	tri.verticesCount = 4;
+	tri.trianglesCount = 1;
 
-	Transform quadTransform;
-	quadTransform.position = Vec3f(0, 0, 3);
-	quadTransform.rotation = Vec3f(0, 0, 0);
+	Transform triTransform;
+	triTransform.position = Vec3f(0,0.,5);
+	triTransform.rotation = Vec3f(0, 0, 0);
+
 
 	Mesh torus;
 	ResourceManager::loadMesh("res/torus.obj", torus);
@@ -86,7 +87,7 @@ int main(void)
 		//Camera::transform.rotation.y += 72.f * Time::deltaTime;
 
 		float cameraMoveSpeed = 5.f;
-		float cameraRotationSpeed = 90.f;
+		float cameraRotationSpeed = 45.f;
 
 		Mat4x4 rightRot = Mat4x4::rotationMatrix_X(Camera::transform.rotation.x * 3.14159f / 180);
 		Mat4x4 upRot = Mat4x4::rotationMatrix_Y(Camera::transform.rotation.y * 3.14159f / 180);
@@ -99,6 +100,11 @@ int main(void)
 
 		Vec4f r = Vec4f(1, 0, 0, 0);
 		Vec3f right = Mat4x4::multiplyVector(allRot, r);
+
+		if (Platform::input->keyPressed(342))
+			cameraRotationSpeed = 30.f;
+		else
+			cameraRotationSpeed = 90.f;
 
 		if (Platform::input->keyPressed(87))
 			Camera::transform.position = Camera::transform.position + forward * cameraMoveSpeed * Time::deltaTime;
@@ -138,13 +144,13 @@ int main(void)
 
 		Camera::calculateViewMatrix();
 
-		//Render::drawMesh(quad, quadTransform);
-		Render::drawMesh(torus, torusTransform);
-		Render::drawMesh(icosphere, icosphereTransform);
-		Render::drawMesh(cube, cubeTransform);
-		Render::drawMesh(car, carTransform);
-		Render::drawMesh(head, headTransform);
-		Render::drawMesh(mountains, mountainsTransform);
+		//Render::drawMesh2(tri, triTransform);
+		Render::drawMesh2(torus, torusTransform);
+		Render::drawMesh2(icosphere, icosphereTransform);
+		Render::drawMesh2(cube, cubeTransform);
+		Render::drawMesh2(car, carTransform);
+		Render::drawMesh2(head, headTransform);
+		Render::drawMesh2(mountains, mountainsTransform);
 
 		Render::render();
 		Time::stopUpdateTimer();
@@ -155,7 +161,6 @@ int main(void)
 	}
 
 	std::cout << fpsSum / frameCount << std::endl;
-	//fast_obj_destroy(mesh);
 	Platform::screen->finalize();
 	return 0;
 }
