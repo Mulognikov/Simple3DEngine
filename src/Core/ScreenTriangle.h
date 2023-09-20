@@ -6,4 +6,6 @@ struct ScreenTriangle
 	int16_t x;
 	float y;
 	float z;
+	float u;
+	float v;
 };

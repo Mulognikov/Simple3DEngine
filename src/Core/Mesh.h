@@ -8,9 +8,12 @@ class Mesh
 {
 public:
 	Vec3f *vertices;
+	Vec3f *textureVertices;
 	Triangle *triangles;
 
+
 	uint32_t verticesCount;
+	uint32_t textureVerticesCount;
 	uint32_t trianglesCount;
 
 	Vec3f boundsCenter = Vec3f(0, 0, 0);

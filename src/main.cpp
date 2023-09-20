@@ -18,31 +18,46 @@ int main(void)
 	Camera::transform.rotation = Vec3f(0.0, 0, 0);
 	Camera::calculateViewMatrix();
 
+	Texture texture;
+	ResourceManager::loadTexturePPM("res/WoodenCrateTexture.ppm", texture);
 
-	Mesh cube;
-	ResourceManager::loadMesh("res/cube.obj", cube);
-
-	Transform cubeTransform;
-	cubeTransform.position = Vec3f(0.0f, -1.72f, 1.5f);
-	cubeTransform.rotation = Vec3f(20, 0, 0);
-	cubeTransform.scale = Vec3f(1.0f, 1.0f, 1.0f);
+	Texture texture2;
+	ResourceManager::loadTexturePPM("res/WoodCrateHighRes.ppm", texture2);
 
 	Mesh tri;
 	tri.vertices = new Vec3f[4];
 	tri.vertices[1] = Vec3f(-1,1,0);
 	tri.vertices[2] = Vec3f(1,1,0);
 	tri.vertices[3] = Vec3f(1,-1,0);
+	tri.textureVertices = new Vec3f[4];
+	tri.textureVertices[1] = Vec3f(0,1,0);
+	tri.textureVertices[2] = Vec3f(1,1,0);
+	tri.textureVertices[3] = Vec3f(1,0,0);
 	tri.triangles = new Triangle[1];
 	tri.triangles[0].face[0] = 1;
 	tri.triangles[0].face[1] = 2;
 	tri.triangles[0].face[2] = 3;
+	tri.triangles[0].uv[0] = 1;
+	tri.triangles[0].uv[1] = 2;
+	tri.triangles[0].uv[2] = 3;
 	tri.verticesCount = 4;
+	tri.textureVerticesCount = 4;
 	tri.trianglesCount = 1;
 
 	Transform triTransform;
-	triTransform.position = Vec3f(0,0.,5);
-	triTransform.rotation = Vec3f(0, 0, 0);
+	triTransform.position = Vec3f(0,-1.0,5);
+	triTransform.rotation = Vec3f(0, -45, 0);
 
+	Mesh cube;
+	ResourceManager::loadMesh("res/cube2.obj", cube);
+
+	Transform cubeTransform;
+	cubeTransform.position = Vec3f(0.0f, 0.f, 3.5f);
+	cubeTransform.rotation = Vec3f(20, 0, 0);
+	cubeTransform.scale = Vec3f(1.0f, 1.0f, 1.0f);
+
+	Transform cube2Transform;
+	cube2Transform.position = Vec3f(-3.0f, 1.0f, 2.0f);
 
 	Mesh torus;
 	ResourceManager::loadMesh("res/torus.obj", torus);
@@ -62,16 +77,16 @@ int main(void)
 	ResourceManager::loadMesh("res/car.obj", car);
 
 	Transform carTransform;
-	carTransform.position = Vec3f(0.0f, -1.5f, -8.0f);
-	carTransform.rotation = Vec3f(0, 45, 0);
+	carTransform.position = Vec3f(-5.0f, -1.5f, 0.0f);
+	carTransform.rotation = Vec3f(0, 135, 0);
 	carTransform.scale = Vec3f(1.0f, 1.0f, 1.0f);
 
 	Mesh head;
 	ResourceManager::loadMesh("res/head.obj", head);
 
 	Transform headTransform;
-	headTransform.position = Vec3f(10.0f, 0.f, -5.0f);
-	headTransform.rotation = Vec3f(0, 0, 0);
+	headTransform.position = Vec3f(7.0f, 0.f, -3.0f);
+	headTransform.rotation = Vec3f(0, -110, 0);
 	headTransform.scale = Vec3f(1.0f, 1.0f, 1.0f);
 
 	Mesh mountains;
@@ -102,9 +117,15 @@ int main(void)
 		Vec3f right = Mat4x4::multiplyVector(allRot, r);
 
 		if (Platform::input->keyPressed(342))
+		{
 			cameraRotationSpeed = 30.f;
+			cameraMoveSpeed = 1.0f;
+		}
 		else
+		{
 			cameraRotationSpeed = 90.f;
+			cameraMoveSpeed = 5.0f;
+		}
 
 		if (Platform::input->keyPressed(87))
 			Camera::transform.position = Camera::transform.position + forward * cameraMoveSpeed * Time::deltaTime;
@@ -144,13 +165,14 @@ int main(void)
 
 		Camera::calculateViewMatrix();
 
-		//Render::drawMesh2(tri, triTransform);
-		Render::drawMesh2(torus, torusTransform);
-		Render::drawMesh2(icosphere, icosphereTransform);
-		Render::drawMesh2(cube, cubeTransform);
-		Render::drawMesh2(car, carTransform);
-		Render::drawMesh2(head, headTransform);
-		Render::drawMesh2(mountains, mountainsTransform);
+		//Render::drawMesh2(tri, triTransform, texture);
+		//Render::drawMesh(torus, torusTransform);
+		//Render::drawMesh(icosphere, icosphereTransform);
+		Render::drawMesh2(cube, cubeTransform, texture);
+		Render::drawMesh2(cube, cube2Transform, texture2);
+		//Render::drawMesh(car, carTransform);
+		//Render::drawMesh(head, headTransform);
+		//Render::drawMesh(mountains, mountainsTransform);
 
 		Render::render();
 		Time::stopUpdateTimer();

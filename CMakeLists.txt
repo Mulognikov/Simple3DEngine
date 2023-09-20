@@ -39,7 +39,7 @@ add_executable(${PROJECT_NAME}
         src/Platform/Abstract/Input.h src/Platform/Windows/InputGLFW.h
         src/Platform/Windows/InputGLFW.cpp
         src/Core/Triangle.h
-        src/Core/ScreenTriangle.h)
+        src/Core/ScreenTriangle.h src/Core/Texture.h)
 
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)

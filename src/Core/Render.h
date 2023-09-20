@@ -5,6 +5,7 @@
 #include "Mesh.h"
 #include "Transform.h"
 #include "ScreenTriangle.h"
+#include "Texture.h"
 
 #define RENDER_W 320
 #define RENDER_H 240
@@ -21,8 +22,9 @@ public:
 	static void drawLineFast(ScreenTriangle p0, ScreenTriangle p1, uint8_t color);
 	static void drawTriangleWire(ScreenTriangle t0, ScreenTriangle t1, ScreenTriangle t2, uint8_t color);
 	static void drawTriangleFill(ScreenTriangle t0, ScreenTriangle t1, ScreenTriangle t2, uint8_t color);
+	static void drawTriangleTextured(ScreenTriangle t0, ScreenTriangle t1, ScreenTriangle t2, Texture &texture);
 	static void drawMesh(Mesh &mesh, Transform &transform);
-	static void drawMesh2(Mesh &mesh, Transform &transform);
+	static void drawMesh2(Mesh &mesh, Transform &transform, Texture &texture);
 	static void render();
 
 private:
@@ -31,6 +33,12 @@ private:
 	static inline Z_BUFFER_DEPTH zBuffer[PIXELS_COUNT];
 	static inline float x02[RENDER_H];
 	static inline float x012[RENDER_H];
+	static inline float u02[RENDER_H];
+	static inline float u012[RENDER_H];
+	static inline float uValues[RENDER_W];
+	static inline float v02[RENDER_H];
+	static inline float v012[RENDER_H];
+	static inline float vValues[RENDER_W];
 	static inline Z_BUFFER_DEPTH z02[RENDER_H];
 	static inline Z_BUFFER_DEPTH z012[RENDER_H];
 	static inline Z_BUFFER_DEPTH zValues[RENDER_W];
@@ -47,12 +55,19 @@ private:
 	static void verticesViewToScreen(Vec4f *inVertices, uint32_t &verticesCount, ScreenTriangle *outVertices);
 	static void cullBackFaces(Vec4f *inVertices, Triangle *inTriangles, uint32_t &trianglesCount, Triangle *outTriangles, uint32_t &outCount);
 	static void clipFaces(Vec4f *inVertices, Triangle *inTriangles, uint32_t &verticesCount, uint32_t &trianglesCount, Triangle *outTriangles, uint32_t &outTrianglesCount);
-	static void clipFaceZ(Vec4f *inVertices, uint32_t &verticesCount, Triangle &inTriangle, Triangle *outTriangle, uint8_t &outTrianglesCount);
+	static void clipFaceZ(Vec4f *inVertices, Vec3f *inUV, uint32_t &verticesCount, uint32_t &uvCount, Triangle &inTriangle, Triangle *outTriangle, uint8_t &outTrianglesCount);
 	static void clearScreen();
 	static void interpolate(int i0, float d0, int i1, float d1, float *values, int& count);
-	static void interpolateInScreenBounds(int i0, float d0, int i1, float d1, float *values, int& count, int offset);
+	static void interpolateInScreenBounds(int i0, float d0, int i1, float d1, float *values, int& count, int offset, int max);
 	static void intersectionWithPlane(Vec3f &startPositive, Vec3f &endNegative, Vec3f &planeNormal, float &planeD, Vec3f &intersectPoint);
-	static void intersectionWithPlane(Vec4f &startPositive, Vec4f &endNegative, Vec3f &planeNormal, float &planeD, Vec4f &intersectPoint);
+	static void intersectionWithPlane(Vec4f &startPositive,
+									  Vec4f &endNegative,
+									  Vec3f &uvStart,
+									  Vec3f &uvEnd,
+									  Vec3f &planeNormal,
+									  float &planeD,
+									  Vec4f &intersectPoint,
+									  Vec3f &uvIntersect);
 
 
 	static inline float edgeFunction(const Vec3f &a, const Vec3f &b, const Vec3f &c)
